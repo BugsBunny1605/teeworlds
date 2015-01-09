@@ -10,6 +10,7 @@
 #include "collision.h"
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
+#include <engine/shared/lua.h>
 
 
 class CTuneParam
@@ -160,12 +161,21 @@ enum
 	COREEVENT_HOOK_RETRACT=0x40,
 };
 
+class CGameCoreLua : public CLua
+{
+public:
+    CGameCoreLua();
+    ~CGameCoreLua();
+};
+
 class CWorldCore
 {
+    CGameCoreLua m_Lua;
 public:
 	CWorldCore()
 	{
 		mem_zero(m_apCharacters, sizeof(m_apCharacters));
+		m_Lua.LoadFile("lua/gamecore.lua");
 	}
 
 	CTuningParams m_Tuning;

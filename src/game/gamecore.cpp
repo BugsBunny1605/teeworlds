@@ -55,6 +55,16 @@ float VelocityRamp(float Value, float Start, float Range, float Curvature)
 	return 1.0f/powf(Curvature, (Value-Start)/Range);
 }
 
+CGameCoreLua::CGameCoreLua()
+{
+
+}
+
+CGameCoreLua::~CGameCoreLua()
+{
+
+}
+
 void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision)
 {
 	m_pWorld = pWorld;
