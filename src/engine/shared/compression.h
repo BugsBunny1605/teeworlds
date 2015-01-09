@@ -11,4 +11,19 @@ public:
 	static long Compress(const void *pSrc, int Size, void *pDst);
 	static long Decompress(const void *pSrc, int Size, void *pDst);
 };
+
+
+class CVariableInt64
+{
+public:
+	static unsigned char *Pack(unsigned char *pDst, long long i);
+	static const unsigned char *Unpack(const unsigned char *pSrc, long long *pInOut);
+};
+
+class CVariableUInt64
+{
+public:
+	static unsigned char *Pack(unsigned char *pDst, unsigned long long i);
+	static const unsigned char *Unpack(const unsigned char *pSrc, unsigned long long *pInOut);
+};
 #endif

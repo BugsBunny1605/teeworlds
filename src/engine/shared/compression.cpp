@@ -59,6 +59,82 @@ const unsigned char *CVariableInt::Unpack(const unsigned char *pSrc, int *pInOut
 	return pSrc;
 }
 
+// Format: ESDDDDDD EDDDDDDD EDD... Extended, Data, Sign
+unsigned char *CVariableInt64::Pack(unsigned char *pDst, long long i)
+{
+    *pDst = (i>>25)&0x40; // set sign bit if i<0
+    i = i^(i>>31); // if(i<0) i = ~i
+    *pDst |= i&0x3F; // pack 6bit into dst
+    i >>= 6; // discard 6 bits
+    if(i)
+    {
+        *pDst |= 0x80; // set extend bit
+        while(1)
+        {
+            pDst++;
+            *pDst = i&(0x7F); // pack 7bit
+            i >>= 7; // discard 7 bits
+            *pDst |= (i!=0)<<7; // set extend bit (may branch)
+            if(!i)
+                break;
+        }
+    }
+    pDst++;
+    return pDst;
+}
+const unsigned char *CVariableInt64::Unpack(const unsigned char *pSrc, long long *pInOut)
+{
+    int Sign = (*pSrc>>6)&1;
+    if (pInOut)
+        *pInOut = *pSrc&0x3F;
+    int i = 0;
+    do
+    {
+        if(!(*pSrc&0x80)) break;
+        pSrc++;
+        if (pInOut)
+            *pInOut |= (unsigned long long)(*pSrc&(0x7F))<<(6 + i);
+
+        i += 7;
+    }
+    while(0);
+    pSrc++;
+    *pInOut ^= -Sign; // if(sign) *i = ~(*i)
+    return pSrc;
+}
+
+// Format: EDDDDDDD EDD... Extended, Data
+unsigned char *CVariableUInt64::Pack(unsigned char *pDst, unsigned long long i)
+{
+    while(1)
+    {
+        *pDst = i&(0x7F); // pack 7bit
+        i >>= 7; // discard 7 bits
+        *pDst |= (i!=0)<<7; // set extend bit (may branch)
+        if(!i)
+            break;
+        pDst++;
+    }
+    return pDst;
+}
+const unsigned char *CVariableUInt64::Unpack(const unsigned char *pSrc, unsigned long long *pInOut)
+{
+    if (pInOut)
+        *pInOut = 0;
+    int i = 7;
+    while (1)
+    {
+        if (pInOut)
+            *pInOut |= (unsigned long long)(*pSrc&(0x7F)) << i;
+        if (!(*pSrc&0x80))
+            break;
+        i += 7;
+        pSrc++;
+    }
+    pSrc++;
+    return pSrc;
+}
+
 
 long CVariableInt::Decompress(const void *pSrc_, int Size, void *pDst_)
 {
