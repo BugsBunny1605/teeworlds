@@ -2,6 +2,8 @@
 
 CLua::CLua()
 {
+    m_pProtocol = 0;
+
     m_pLua = luaL_newstate();
     lua_atpanic(m_pLua, this->Panic);
     lua_register(m_pLua, "errorfunc", this->ErrorFunc);
@@ -27,13 +29,21 @@ CLua::CLua()
     lua_pushlightuserdata(m_pLua, this);
     lua_setglobal(m_pLua, "pLUA");
 
+    //register custom modules
+    //outsource this in a register function
+    //client/setver -> base
+
     //register vec
-    m_Vec2.Init(m_pLua);
-    m_Vec3.Init(m_pLua);
-    m_Vec4.Init(m_pLua);
+    CLuaVec2::Init(m_pLua);
+    CLuaVec3::Init(m_pLua);
+    CLuaVec4::Init(m_pLua);
 
     //register protocol
+    //m_pProtocol->Init(m_pLua);
+    //we cant register the protocol here
 
+    //entity controller
+    m_EntityController.Init(m_pLua);
 
 }
 

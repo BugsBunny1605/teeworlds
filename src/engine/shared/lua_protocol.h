@@ -4,6 +4,8 @@
 #ifndef ENGINE_SHARED_LUAPROTOCOL_H
 #define ENGINE_SHARED_LUAPROTOCOL_H
 #include "engine/shared/compression.h"
+#include "engine/shared/stream.h"
+#include <lua.hpp>
 
 
 enum
@@ -27,30 +29,24 @@ enum
     //custom_id data
 };
 
-struct CLuaEntitiyPrototype
-{
-    char m_aName[256];
-    unsigned long m_TypeID;
-};
-
-struct CLuaEntity
-{
-    CLuaEntitiyPrototype *m_pPrototype;
-    unsigned long m_EntityID;
-};
-
 struct CLuaPacket
 {
     unsigned long long m_Type;
     unsigned long long m_Size;
-    const char *m_pData;
+    char *m_pData;
 };
+
 
 class CLuaProtocol
 {
+protected:
+    lua_State *m_pLua;
+    CStream m_RecvBuffer;
+    CStream m_SendBuffer;
 public:
-    void Init();
-    void SendRawPacket(CLuaPacket *pPacket);
+    virtual void Init(lua_State *L);
+    virtual void Update() = 0;
+    bool SendRawPacket(CLuaPacket *pPacket);
     bool ProcessPacket(CLuaPacket *pPacket);
 };
 

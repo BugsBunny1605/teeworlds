@@ -7,15 +7,15 @@
 #include <lua.hpp>
 #include <base/system.h>
 #include "lua_vec.h"
+#include "lua_protocol.h"
+#include "lua_entity.h"
 
 class CLua
 {
-private:
-    CLuaVec2 m_Vec2;
-    CLuaVec3 m_Vec3;
-    CLuaVec4 m_Vec4;
 protected:
     lua_State *m_pLua;
+    CLuaProtocol *m_pProtocol; //interface for client/server
+    CLuaEntityController m_EntityController;
     char m_aFilename[256];
 
 public:

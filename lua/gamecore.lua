@@ -1,3 +1,11 @@
+a = vec2(0, 1)
+b = vec3(0, 1, 3)
+
+print(vec2_length(a))
+print(vec2_length(b))
+
+
+
 function CCharacterCore()
     local self = {
         m_Pos = vec2(0, 0),

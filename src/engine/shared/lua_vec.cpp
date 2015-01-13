@@ -1,6 +1,8 @@
 #include "lua_vec.h"
 #include "lua.h"
 
+//todo check type __add too?
+
 //vec2
 void CLuaVec2::Init(lua_State *L)
 {
@@ -64,6 +66,15 @@ void CLuaVec2::CreateVec(lua_State *L, vec2 v)
 
     luaL_getmetatable(L, "vec2");
     lua_setmetatable(L, -2);
+}
+
+bool CLuaVec2::CheckType(lua_State *L, int idx)
+{
+    lua_getmetatable(L, idx);
+    luaL_getmetatable(L, "vec2");
+    int i = lua_rawequal(L, -1, -2);
+    lua_pop(L, 2);
+    return i;
 }
 
 vec2 CLuaVec2::GetVec(lua_State *L, int idx)
@@ -146,30 +157,60 @@ int CLuaVec2::vec__le(lua_State *L)
 
 int CLuaVec2::vec_length(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec2_length' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, length(GetVec(L, 1)));
     return 1;
 }
 
 int CLuaVec2::vec_distance(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec2_distance' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, distance(GetVec(L, 1), GetVec(L, 2)));
     return 1;
 }
 
 int CLuaVec2::vec_dot(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec2_dot' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, dot(GetVec(L, 1), GetVec(L, 2)));
     return 1;
 }
 
 int CLuaVec2::vec_normalize(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec2_normalize' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     CreateVec(L, normalize(GetVec(L, 1)));
     return 1;
 }
 
 int CLuaVec2::vec_closest_point_on_line(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec2_closest_point_on_line' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     CreateVec(L, closest_point_on_line(GetVec(L, 1), GetVec(L, 2), GetVec(L, 3)));
     return 1;
 }
@@ -242,6 +283,15 @@ void CLuaVec3::CreateVec(lua_State *L, vec3 v)
 
     luaL_getmetatable(L, "vec3");
     lua_setmetatable(L, -2);
+}
+
+bool CLuaVec3::CheckType(lua_State *L, int idx)
+{
+    lua_getmetatable(L, idx);
+    luaL_getmetatable(L, "vec3");
+    int i = lua_rawequal(L, -1, -2);
+    lua_pop(L, 2);
+    return i;
 }
 
 vec3 CLuaVec3::GetVec(lua_State *L, int idx)
@@ -329,30 +379,78 @@ int CLuaVec3::vec__le(lua_State *L)
 
 int CLuaVec3::vec_length(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_length' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, length(GetVec(L, 1)));
     return 1;
 }
 
 int CLuaVec3::vec_distance(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_distance' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
+    if (!CheckType(L, 2))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_distance' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, distance(GetVec(L, 1), GetVec(L, 2)));
     return 1;
 }
 
 int CLuaVec3::vec_dot(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_dot' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
+    if (!CheckType(L, 2))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_dot' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     lua_pushnumber(L, dot(GetVec(L, 1), GetVec(L, 2)));
     return 1;
 }
 
 int CLuaVec3::vec_normalize(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_normalize' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     CreateVec(L, normalize(GetVec(L, 1)));
     return 1;
 }
 
 int CLuaVec3::vec_cross(lua_State *L)
 {
+    if (!CheckType(L, 1))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_cross' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
+    if (!CheckType(L, 2))
+    {
+        lua_pushstring(L, "Attempt to call 'vec3_cross' with invalid parameters");
+        lua_error(L);
+        return 0;
+    }
     CreateVec(L, cross(GetVec(L, 1), GetVec(L, 2)));
     return 1;
 }
@@ -422,6 +520,15 @@ void CLuaVec4::CreateVec(lua_State *L, vec4 v)
 
     luaL_getmetatable(L, "vec4");
     lua_setmetatable(L, -2);
+}
+
+bool CLuaVec4::CheckType(lua_State *L, int idx)
+{
+    lua_getmetatable(L, idx);
+    luaL_getmetatable(L, "vec4");
+    int i = lua_rawequal(L, -1, -2);
+    lua_pop(L, 2);
+    return i;
 }
 
 vec4 CLuaVec4::GetVec(lua_State *L, int idx)
