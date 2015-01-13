@@ -20,3 +20,10 @@ teeworlds*
 teeworlds_srv*
 tileset_border*
 versionsrv*
+/other/luajit/LuaJIT-2.0.2/src/*.ilk
+/other/luajit/LuaJIT-2.0.2/src/*.pdb
+/other/luajit/win32/*.ilk
+/other/luajit/win32/*.pdb
+/*.exe
+/*.dll
+/*.pdb

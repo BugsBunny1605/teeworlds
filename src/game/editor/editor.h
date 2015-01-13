@@ -477,8 +477,140 @@ public:
 	virtual int RenderProperties(CUIRect *pToolbox);
 };
 
+enum
+{
+    EDITOR_VIEW_NONE = 0,
+    EDITOR_VIEW_GROUP,
+    EDITOR_VIEW_MENU,
+    EDITOR_VIEW_LAYER,
+    EDITOR_VIEW_EDITOR,
+    EDITOR_VIEW_SCRIPT,
+    EDITOR_VIEW_CURVES,
+};
+
+enum
+{
+    EDITOR_UI_ICON_LEX = 0,
+    EDITOR_UI_ICON_REX,
+    EDITOR_UI_ICON_LAYER,
+    EDITOR_UI_ICON_EDITOR,
+    EDITOR_UI_ICON_SCRIPT,
+    EDITOR_UI_ICON_CURVES,
+};
+
+class CView
+{
+    int m_uLEx;
+    int m_uREx;
+    int m_uSelector;
+    friend class CEditor;
+    friend class CViewGroup;
+protected:
+    class CEditor *m_pEditor;
+
+    class CViewGroup *m_pParent;
+    float m_Width;
+    float m_Height;
+public:
+    CView(class CEditor *pEditor, class CViewGroup *pParent);
+    virtual int GetType() = 0;
+    virtual CUIRect Render(CUIRect *pView);
+    virtual float GetMinWidth() { return 100; }
+    virtual float GetMaxWidth() { return 1000; }
+    virtual float GetMinHeight() { return 1; }
+    virtual float GetMaxHeight() { return 1000; }
+    float DeltaWidth(float x);
+    float DeltaHeight(float y);
+    bool SetWidth(float x);
+    bool SetHeight(float y);
+
+    CUIRect GetView(CUIRect *pView, int m_Direction);
+};
+
+class CViewGroup : public CView
+{
+    friend class CView;
+protected:
+    array<CView *> m_lpChildren;
+public:
+    CViewGroup(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    int GetType() { return EDITOR_VIEW_GROUP; }
+    CUIRect Render(CUIRect *pView);
+};
+
+class CViewMenu : public CView
+{
+    int m_uFile;
+    int m_uViewSelector;
+public:
+    CViewMenu(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent)
+    {
+        m_Width = 0;
+        m_Height = 16;
+    }
+    int GetType() { return EDITOR_VIEW_MENU; }
+    float GetMinHeight() { return 16; }
+    float GetMaxHeight() { return 16; }
+    CUIRect Render(CUIRect *pView);
+};
+
+class CViewLayer : public CView
+{
+    int m_uTabButton;
+    int m_Mode;
+
+    //RenderLayers stuff
+    int m_uLayerScrollBar;
+    float m_LayerScrollValue;
+    int m_uLayerNewGroupButton;
+    int m_uLayerGroupPopupId;
+
+    //RenderImages stuff
+    int m_uImageScrollBar;
+    float m_ImageScrollValue;
+    int m_uImagePopupImageID;
+    int m_uImageNewImageButton;
+public:
+    CViewLayer(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent)
+    {
+        m_Mode = MODE_LAYERS;
+        m_LayerScrollValue = 0;
+        m_ImageScrollValue = 0;
+    }
+    int GetType() { return EDITOR_VIEW_LAYER; }
+    CUIRect Render(CUIRect *pView);
+
+    void RenderLayers(CUIRect *pView);
+    void RenderImages(CUIRect *pView);
+};
+
+class CViewEditor : public CView
+{
+public:
+    CViewEditor(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    int GetType() { return EDITOR_VIEW_EDITOR; }
+    CUIRect Render(CUIRect *pView);
+};
+
+class CViewScript : public CView
+{
+public:
+    CViewScript(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    int GetType() { return EDITOR_VIEW_SCRIPT; }
+    CUIRect Render(CUIRect *pView);
+};
+
+class CViewCurves : public CView
+{
+public:
+    int GetType() { return EDITOR_VIEW_CURVES; }
+    CUIRect Render(CUIRect *pView);
+};
+
 class CEditor : public IEditor
 {
+    friend class CView;
+    friend class CViewGroup;
 	class IInput *m_pInput;
 	class IClient *m_pClient;
 	class IConsole *m_pConsole;
@@ -487,6 +619,10 @@ class CEditor : public IEditor
 	class IStorage *m_pStorage;
 	CRenderTools m_RenderTools;
 	CUI m_UI;
+
+	CViewGroup *m_pMain;
+	CView *m_pDragging;
+    vec2 m_StartPos;
 public:
 	class IInput *Input() { return m_pInput; };
 	class IClient *Client() { return m_pClient; };
@@ -568,8 +704,12 @@ public:
 		ms_BackgroundTexture = 0;
 		ms_CursorTexture = 0;
 		ms_EntitiesTexture = 0;
+		ms_UIButtons = 0;
 
 		ms_pUiGotContext = 0;
+
+		m_pDragging = 0;
+		m_pMain = new CViewGroup(this);
 	}
 
 	virtual void Init();
@@ -698,6 +838,7 @@ public:
 	static int ms_BackgroundTexture;
 	static int ms_CursorTexture;
 	static int ms_EntitiesTexture;
+	static int ms_UIButtons;
 
 	CLayerGroup m_Brush;
 	CLayerTiles m_TilesetPicker;
@@ -716,6 +857,10 @@ public:
 	int DoButton_Ex(const void *pID, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip, int Corners, float FontSize=10.0f);
 	int DoButton_ButtonDec(const void *pID, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
 	int DoButton_ButtonInc(const void *pID, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
+
+    //ui stuff
+	int DoButton_UI(const void *pID, int Image, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
+	int DoButton_Divider(const void *pID, const CUIRect *pRect);
 
 	int DoButton_File(const void *pID, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
 
@@ -780,7 +925,6 @@ public:
 	void RenderStatusbar(CUIRect View);
 	void RenderEnvelopeEditor(CUIRect View);
 
-	void RenderMenubar(CUIRect Menubar);
 	void RenderFileDialog();
 
 	void AddFileDialogEntry(int Index, CUIRect *pView);
