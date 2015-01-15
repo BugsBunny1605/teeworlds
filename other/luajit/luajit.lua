@@ -29,6 +29,7 @@ luajit = {
 		end
 
 		local display = function(option)
+            return ""
 		end
 
 		local o = MakeOption(name, 0, check, save, display)
