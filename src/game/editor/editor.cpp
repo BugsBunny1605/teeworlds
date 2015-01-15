@@ -784,281 +784,6 @@ void CEditor::CallbackSaveMap(const char *pFileName, int StorageType, void *pUse
 	pEditor->m_Dialog = DIALOG_NONE;
 }
 
-void CEditor::DoToolbar(CUIRect ToolBar)
-{
-	CUIRect TB_Top, TB_Bottom;
-	CUIRect Button;
-
-	ToolBar.HSplitTop(ToolBar.h/2.0f, &TB_Top, &TB_Bottom);
-
-	TB_Top.HSplitBottom(2.5f, &TB_Top, 0);
-	TB_Bottom.HSplitTop(2.5f, 0, &TB_Bottom);
-
-	// ctrl+o to open
-	if(Input()->KeyDown('o') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL)) && m_Dialog == DIALOG_NONE)
-	{
-		if(HasUnsavedData())
-		{
-			if(!m_PopupEventWasActivated)
-			{
-				m_PopupEventType = POPEVENT_LOAD;
-				m_PopupEventActivated = true;
-			}
-		}
-		else
-			InvokeFileDialog(IStorage::TYPE_ALL, FILETYPE_MAP, "Load map", "Load", "maps", "", CallbackOpenMap, this);
-	}
-
-	// ctrl+s to save
-	if(Input()->KeyDown('s') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL)) && m_Dialog == DIALOG_NONE)
-	{
-		if(m_aFileName[0] && m_ValidSaveFilename)
-		{
-			if(!m_PopupEventWasActivated)
-			{
-				str_copy(m_aFileSaveName, m_aFileName, sizeof(m_aFileSaveName));
-				m_PopupEventType = POPEVENT_SAVE;
-				m_PopupEventActivated = true;
-			}
-		}
-		else
-			InvokeFileDialog(IStorage::TYPE_SAVE, FILETYPE_MAP, "Save map", "Save", "maps", "", CallbackSaveMap, this);
-	}
-
-	// detail button
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_HqButton = 0;
-	if(DoButton_Editor(&s_HqButton, "HD", m_ShowDetail, &Button, 0, "[ctrl+h] Toggle High Detail") ||
-		(Input()->KeyDown('h') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL))))
-	{
-		m_ShowDetail = !m_ShowDetail;
-	}
-
-	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
-
-	// animation button
-	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
-	static int s_AnimateButton = 0;
-	if(DoButton_Editor(&s_AnimateButton, "Anim", m_Animate, &Button, 0, "[ctrl+m] Toggle animation") ||
-		(Input()->KeyDown('m') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL))))
-	{
-		m_AnimateStart = time_get();
-		m_Animate = !m_Animate;
-	}
-
-	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
-
-	// proof button
-	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
-	static int s_ProofButton = 0;
-	if(DoButton_Editor(&s_ProofButton, "Proof", m_ProofBorders, &Button, 0, "[ctrl+p] Toggles proof borders. These borders represent what a player maximum can see.") ||
-		(Input()->KeyDown('p') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL))))
-	{
-		m_ProofBorders = !m_ProofBorders;
-	}
-
-	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
-
-	// tile info button
-	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
-	static int s_TileInfoButton = 0;
-	if(DoButton_Editor(&s_TileInfoButton, "Info", m_ShowTileInfo, &Button, 0, "[ctrl+i] Show tile informations") ||
-		(Input()->KeyDown('i') && (Input()->KeyPressed(KEY_LCTRL) || Input()->KeyPressed(KEY_RCTRL))))
-	{
-		m_ShowTileInfo = !m_ShowTileInfo;
-		m_ShowEnvelopePreview = 0;
-	}
-
-	TB_Top.VSplitLeft(15.0f, 0, &TB_Top);
-
-	// zoom group
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_ZoomOutButton = 0;
-	if(DoButton_Ex(&s_ZoomOutButton, "ZO", 0, &Button, 0, "[NumPad-] Zoom out", CUI::CORNER_L))
-		m_ZoomLevel += 50;
-
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_ZoomNormalButton = 0;
-	if(DoButton_Ex(&s_ZoomNormalButton, "1:1", 0, &Button, 0, "[NumPad*] Zoom to normal and remove editor offset", 0))
-	{
-		m_EditorOffsetX = 0;
-		m_EditorOffsetY = 0;
-		m_ZoomLevel = 100;
-	}
-
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_ZoomInButton = 0;
-	if(DoButton_Ex(&s_ZoomInButton, "ZI", 0, &Button, 0, "[NumPad+] Zoom in", CUI::CORNER_R))
-		m_ZoomLevel -= 50;
-
-	TB_Top.VSplitLeft(10.0f, 0, &TB_Top);
-
-	// animation speed
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_AnimFasterButton = 0;
-	if(DoButton_Ex(&s_AnimFasterButton, "A+", 0, &Button, 0, "Increase animation speed", CUI::CORNER_L))
-		m_AnimateSpeed += 0.5f;
-
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_AnimNormalButton = 0;
-	if(DoButton_Ex(&s_AnimNormalButton, "1", 0, &Button, 0, "Normal animation speed", 0))
-		m_AnimateSpeed = 1.0f;
-
-	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-	static int s_AnimSlowerButton = 0;
-	if(DoButton_Ex(&s_AnimSlowerButton, "A-", 0, &Button, 0, "Decrease animation speed", CUI::CORNER_R))
-	{
-		if(m_AnimateSpeed > 0.5f)
-			m_AnimateSpeed -= 0.5f;
-	}
-
-	TB_Top.VSplitLeft(10.0f, &Button, &TB_Top);
-
-
-	// brush manipulation
-	{
-		int Enabled = m_Brush.IsEmpty()?-1:0;
-
-		// flip buttons
-		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-		static int s_FlipXButton = 0;
-		if(DoButton_Ex(&s_FlipXButton, "X/X", Enabled, &Button, 0, "[N] Flip brush horizontal", CUI::CORNER_L) || Input()->KeyDown('n'))
-		{
-			for(int i = 0; i < m_Brush.m_lLayers.size(); i++)
-				m_Brush.m_lLayers[i]->BrushFlipX();
-		}
-
-		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-		static int s_FlipyButton = 0;
-		if(DoButton_Ex(&s_FlipyButton, "Y/Y", Enabled, &Button, 0, "[M] Flip brush vertical", CUI::CORNER_R) || Input()->KeyDown('m'))
-		{
-			for(int i = 0; i < m_Brush.m_lLayers.size(); i++)
-				m_Brush.m_lLayers[i]->BrushFlipY();
-		}
-
-		// rotate buttons
-		TB_Top.VSplitLeft(15.0f, &Button, &TB_Top);
-
-		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-		static int s_RotationAmount = 90;
-		bool TileLayer = false;
-		// check for tile layers in brush selection
-		for(int i = 0; i < m_Brush.m_lLayers.size(); i++)
-			if(m_Brush.m_lLayers[i]->m_Type == LAYERTYPE_TILES)
-			{
-				TileLayer = true;
-				s_RotationAmount = max(90, (s_RotationAmount/90)*90);
-				break;
-			}
-		s_RotationAmount = UiDoValueSelector(&s_RotationAmount, &Button, "", s_RotationAmount, TileLayer?90:1, 359, TileLayer?90:1, TileLayer?10.0f:2.0f, "Rotation of the brush in degrees. Use left mouse button to drag and change the value. Hold shift to be more precise.");
-
-		TB_Top.VSplitLeft(5.0f, &Button, &TB_Top);
-		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-		static int s_CcwButton = 0;
-		if(DoButton_Ex(&s_CcwButton, "CCW", Enabled, &Button, 0, "[R] Rotates the brush counter clockwise", CUI::CORNER_L) || Input()->KeyDown('r'))
-		{
-			for(int i = 0; i < m_Brush.m_lLayers.size(); i++)
-				m_Brush.m_lLayers[i]->BrushRotate(-s_RotationAmount/360.0f*pi*2);
-		}
-
-		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
-		static int s_CwButton = 0;
-		if(DoButton_Ex(&s_CwButton, "CW", Enabled, &Button, 0, "[T] Rotates the brush clockwise", CUI::CORNER_R) || Input()->KeyDown('t'))
-		{
-			for(int i = 0; i < m_Brush.m_lLayers.size(); i++)
-				m_Brush.m_lLayers[i]->BrushRotate(s_RotationAmount/360.0f*pi*2);
-		}
-	}
-
-	// quad manipulation
-	{
-		// do add button
-		TB_Top.VSplitLeft(10.0f, &Button, &TB_Top);
-		TB_Top.VSplitLeft(60.0f, &Button, &TB_Top);
-		static int s_NewButton = 0;
-
-		CLayerQuads *pQLayer = (CLayerQuads *)GetSelectedLayerType(0, LAYERTYPE_QUADS);
-		//CLayerTiles *tlayer = (CLayerTiles *)get_selected_layer_type(0, LAYERTYPE_TILES);
-		if(DoButton_Editor(&s_NewButton, "Add Quad", pQLayer?0:-1, &Button, 0, "Adds a new quad"))
-		{
-			if(pQLayer)
-			{
-				float Mapping[4];
-				CLayerGroup *g = GetSelectedGroup();
-				g->Mapping(Mapping);
-				int AddX = f2fx(Mapping[0] + (Mapping[2]-Mapping[0])/2);
-				int AddY = f2fx(Mapping[1] + (Mapping[3]-Mapping[1])/2);
-
-				CQuad *q = pQLayer->NewQuad();
-				for(int i = 0; i < 5; i++)
-				{
-					q->m_aPoints[i].x += AddX;
-					q->m_aPoints[i].y += AddY;
-				}
-			}
-		}
-	}
-
-	// tile manipulation
-	{
-		TB_Bottom.VSplitLeft(40.0f, &Button, &TB_Bottom);
-		static int s_BorderBut = 0;
-		CLayerTiles *pT = (CLayerTiles *)GetSelectedLayerType(0, LAYERTYPE_TILES);
-
-		if(DoButton_Editor(&s_BorderBut, "Border", pT?0:-1, &Button, 0, "Adds border tiles"))
-		{
-			if(pT)
-				DoMapBorder();
-		}
-	}
-
-	TB_Bottom.VSplitLeft(5.0f, 0, &TB_Bottom);
-
-	// refocus button
-	TB_Bottom.VSplitLeft(50.0f, &Button, &TB_Bottom);
-	static int s_RefocusButton = 0;
-	if(DoButton_Editor(&s_RefocusButton, "Refocus", m_WorldOffsetX&&m_WorldOffsetY?0:-1, &Button, 0, "[HOME] Restore map focus") || (m_EditBoxActive == 0 && Input()->KeyDown(KEY_HOME)))
-	{
-		m_WorldOffsetX = 0;
-		m_WorldOffsetY = 0;
-	}
-
-	TB_Bottom.VSplitLeft(5.0f, 0, &TB_Bottom);
-
-	// grid button
-	TB_Bottom.VSplitLeft(50.0f, &Button, &TB_Bottom);
-	static int s_GridButton = 0;
-	if(DoButton_Editor(&s_GridButton, "Grid", m_GridActive, &Button, 0, "Toggle Grid"))
-	{
-		m_GridActive = !m_GridActive;
-	}
-
-	TB_Bottom.VSplitLeft(30.0f, 0, &TB_Bottom);
-
-	// grid zoom
-	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
-	static int s_GridIncreaseButton = 0;
-	if(DoButton_Ex(&s_GridIncreaseButton, "G-", 0, &Button, 0, "Decrease grid", CUI::CORNER_L))
-	{
-		if(m_GridFactor > 1)
-			m_GridFactor--;
-	}
-
-	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
-	static int s_GridNormalButton = 0;
-	if(DoButton_Ex(&s_GridNormalButton, "1", 0, &Button, 0, "Normal grid", 0))
-		m_GridFactor = 1;
-
-	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
-
-	static int s_GridDecreaseButton = 0;
-	if(DoButton_Ex(&s_GridDecreaseButton, "G+", 0, &Button, 0, "Increase grid", CUI::CORNER_R))
-	{
-		if(m_GridFactor < 15)
-			m_GridFactor++;
-	}
-}
-
 static void Rotate(const CPoint *pCenter, CPoint *pPoint, float Rotation)
 {
 	int x = pPoint->x - pCenter->x;
@@ -1913,7 +1638,7 @@ static void ModifyIndexDeleted(int *pIndex)
 		*pIndex = *pIndex - 1;
 }
 
-int CEditor::PopupImage(CEditor *pEditor, CUIRect View)
+int CEditor::PopupImage(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	static int s_ReplaceButton = 0;
 	static int s_RemoveButton = 0;
@@ -2775,7 +2500,7 @@ void CEditor::RenderEnvelopeEditor(CUIRect View)
 	}
 }
 
-int CEditor::PopupMenuFile(CEditor *pEditor, CUIRect View)
+int CEditor::PopupMenuFile(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	static int s_NewMapButton = 0;
 	static int s_SaveButton = 0;
@@ -2871,9 +2596,7 @@ CView::CView(class CEditor *pEditor, class CViewGroup *pParent)
     m_pEditor = pEditor;
     m_pParent = pParent;
     if (pParent)
-    {
         pParent->m_lpChildren.add(this);
-    }
 }
 
 CUIRect CView::GetView(CUIRect *pView, int m_Direction)
@@ -2929,37 +2652,131 @@ bool CView::SetHeight(float y)
 CUIRect CView::Render(CUIRect *pView)
 {
     CUIRect BottomBar;
+    float Brightness = 0.25f;
 
     pView->HSplitBottom(16.0f, pView, &BottomBar);
+    m_pEditor->RenderBackground(BottomBar, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness);
     CUIRect Selector;
     BottomBar.VSplitLeft(16.0f, &Selector, &BottomBar);
     m_pEditor->DoButton_UI(&m_uLEx, EDITOR_UI_ICON_LEX, 0, &Selector, 0, "");
 
+    int IconID = EDITOR_UI_ICON_NONE;
     if (GetType() == EDITOR_VIEW_LAYER)
-    {
-        BottomBar.VSplitLeft(16.0f, &Selector, &BottomBar);
-        m_pEditor->DoButton_UI(&m_uSelector, EDITOR_UI_ICON_LAYER, 0, &Selector, 0, "");
-    }
+        IconID = EDITOR_UI_ICON_LAYER;
+
     if (GetType() == EDITOR_VIEW_EDITOR)
-    {
-        BottomBar.VSplitLeft(16.0f, &Selector, &BottomBar);
-        m_pEditor->DoButton_UI(&m_uSelector, EDITOR_UI_ICON_EDITOR, 0, &Selector, 0, "");
-    }
+        IconID = EDITOR_UI_ICON_EDITOR;
+
     if (GetType() == EDITOR_VIEW_SCRIPT)
-    {
-        BottomBar.VSplitLeft(16.0f, &Selector, &BottomBar);
-        m_pEditor->DoButton_UI(&m_uSelector, EDITOR_UI_ICON_SCRIPT, 0, &Selector, 0, "");
-    }
+        IconID = EDITOR_UI_ICON_SCRIPT;
+
     if (GetType() == EDITOR_VIEW_CURVES)
+        IconID = EDITOR_UI_ICON_CURVES;
+
+    if (GetType() == EDITOR_VIEW_NODES)
+        IconID = EDITOR_UI_ICON_NODES;
+
+    if (IconID != EDITOR_UI_ICON_NONE)
     {
         BottomBar.VSplitLeft(16.0f, &Selector, &BottomBar);
-        m_pEditor->DoButton_UI(&m_uSelector, EDITOR_UI_ICON_CURVES, 0, &Selector, 0, "");
+        if (m_pEditor->DoButton_UI(&m_uSelector, IconID, 0, &Selector, 0, ""))
+        {
+            m_pEditor->UiInvokePopupMenu(&m_uSelectorMenu, 1, BottomBar.x, BottomBar.y+BottomBar.h-1.0f, 120, 150, PopupSelector, this);
+        }
     }
+
 
     BottomBar.VSplitRight(16.0f, &BottomBar, &Selector);
     m_pEditor->DoButton_UI(&m_uREx, EDITOR_UI_ICON_REX, 0, &Selector, 0, "");
 
     return BottomBar;
+}
+
+int CView::PopupSelector(CEditor *pEditor, CUIRect View, void *pUser)
+{
+    CView *pView = (CView *)pUser;
+	static int s_NewMapButton = 0;
+	static int s_SaveButton = 0;
+	static int s_SaveAsButton = 0;
+	static int s_OpenButton = 0;
+	static int s_AppendButton = 0;
+	static int s_ExitButton = 0;
+
+	CUIRect Slot;
+	View.HSplitTop(2.0f, &Slot, &View);
+	View.HSplitTop(12.0f, &Slot, &View);
+	if(pEditor->DoButton_MenuItem(&s_NewMapButton, "Layer", 0, &Slot, 0, ""))
+	{
+        if (pView->GetType() != EDITOR_VIEW_LAYER)
+        {
+            pView->m_pParent->Replace(pView, new CViewLayer(pEditor, 0));
+        }
+        return 1;
+	}
+
+	View.HSplitTop(2.0f, &Slot, &View);
+	View.HSplitTop(12.0f, &Slot, &View);
+	if(pEditor->DoButton_MenuItem(&s_OpenButton, "Editor", 0, &Slot, 0, "Opens a map for editing"))
+	{
+        if (pView->GetType() != EDITOR_VIEW_EDITOR)
+        {
+            pView->m_pParent->Replace(pView, new CViewEditor(pEditor, 0));
+        }
+        return 1;
+	}
+
+	View.HSplitTop(2.0f, &Slot, &View);
+	View.HSplitTop(12.0f, &Slot, &View);
+	if(pEditor->DoButton_MenuItem(&s_AppendButton, "Script", 0, &Slot, 0, "Opens a map and adds everything from that map to the current one"))
+	{
+        if (pView->GetType() != EDITOR_VIEW_SCRIPT)
+        {
+            pView->m_pParent->Replace(pView, new CViewScript(pEditor, 0));
+        }
+        return 1;
+	}
+
+	View.HSplitTop(2.0f, &Slot, &View);
+	View.HSplitTop(12.0f, &Slot, &View);
+	if(pEditor->DoButton_MenuItem(&s_SaveButton, "Curves", 0, &Slot, 0, "Saves the current map"))
+	{
+        if (pView->GetType() != EDITOR_VIEW_CURVES)
+        {
+            pView->m_pParent->Replace(pView, new CViewCurves(pEditor, 0));
+        }
+        return 1;
+	}
+
+	View.HSplitTop(2.0f, &Slot, &View);
+	View.HSplitTop(12.0f, &Slot, &View);
+	if(pEditor->DoButton_MenuItem(&s_SaveAsButton, "Nodes", 0, &Slot, 0, "Saves the current map under a new name"))
+	{
+        if (pView->GetType() != EDITOR_VIEW_NODES)
+        {
+            pView->m_pParent->Replace(pView, new CViewNodes(pEditor, 0));
+        }
+        return 1;
+	}
+
+	return 0;
+}
+
+void CViewGroup::Replace(CView *pOldView, CView *pNewView)
+{
+    for (int i = 0; i < m_lpChildren.size(); i++)
+    {
+        if (m_lpChildren[i] == pOldView)
+        {
+            dbg_msg("size_1", "%i", m_lpChildren.size());
+            pNewView->m_pParent = pOldView->m_pParent; //manually set parent
+            pNewView->m_Width = pOldView->m_Width;
+            pNewView->m_Height = pOldView->m_Height;
+            delete pOldView;
+            m_lpChildren[i] = pNewView;
+            dbg_msg("size_2", "%i", m_lpChildren.size());
+            return;
+        }
+    }
 }
 
 CUIRect CViewGroup::Render(CUIRect *pView)
@@ -3072,9 +2889,6 @@ CUIRect CViewMenu::Render(CUIRect *pView)
 	char aBuf[128];
 	str_format(aBuf, sizeof(aBuf), "File: %s", m_pEditor->m_aFileName);
 	m_pEditor->UI()->DoLabel(&MenuBar, aBuf, 10.0f, -1, -1);
-
-	str_format(aBuf, sizeof(aBuf), "Z: %i, A: %.1f, G: %i", m_pEditor->m_ZoomLevel, m_pEditor->m_AnimateSpeed, m_pEditor->m_GridFactor);
-	m_pEditor->UI()->DoLabel(&Info, aBuf, 10.0f, 1, -1);
 
     return *pView;
 }
@@ -3419,27 +3233,83 @@ CUIRect CViewEditor::Render(CUIRect *pView)
     //m_pEditor->RenderBackground(*pView, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness);
 
     CUIRect MenuBar = CView::Render(pView);
+    char aBuf[32];
+    str_format(aBuf, sizeof(aBuf), "Z: %i, A: %.1f, G: %i", m_ZoomLevel, m_AnimateSpeed, m_GridFactor);
+	m_pEditor->UI()->DoLabel(&MenuBar, aBuf, 10.0f, 1, -1);
+
+
+    CUIRect ToolBar;
+    pView->HSplitTop(53.0f, &ToolBar, pView);
+    m_pEditor->UI()->ClipEnableEx(&ToolBar); //protect the user interface
+    m_pEditor->RenderBackground(ToolBar, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness);
+    ToolBar.Margin(2.0f, &ToolBar);
+    DoToolbar(ToolBar);
+
+    int Inside = m_pEditor->UI()->MouseInside(pView);
+
+    // do zooming
+    if (Inside)
+    {
+        if(m_pEditor->Input()->KeyDown(KEY_KP_MINUS))
+            m_ZoomLevel += 50;
+        if(m_pEditor->Input()->KeyDown(KEY_KP_PLUS))
+            m_ZoomLevel -= 50;
+        if(m_pEditor->Input()->KeyDown(KEY_KP_MULTIPLY))
+        {
+            m_EditorOffsetX = 0;
+            m_EditorOffsetY = 0;
+            m_ZoomLevel = 100;
+        }
+        if(m_pEditor->m_Dialog == DIALOG_NONE)
+        {
+            if(m_pEditor->Input()->KeyPresses(KEY_MOUSE_WHEEL_UP))
+                m_ZoomLevel -= 20;
+
+            if(m_pEditor->Input()->KeyPresses(KEY_MOUSE_WHEEL_DOWN))
+                m_ZoomLevel += 20;
+        }
+    }
+    //make sure the zoom is updated
+    m_ZoomLevel = clamp(m_ZoomLevel, 50, 2000);
+    m_WorldZoom = m_ZoomLevel/100.0f;
+
+    m_pEditor->UI()->ClipDisableEx();
 
     // copy
     m_pEditor->m_WorldOffsetX = m_WorldOffsetX;
     m_pEditor->m_WorldOffsetY = m_WorldOffsetY;
     m_pEditor->m_EditorOffsetX = m_EditorOffsetX;
     m_pEditor->m_EditorOffsetY = m_EditorOffsetY;
+
     m_pEditor->m_WorldZoom = m_WorldZoom;
     m_pEditor->m_ZoomLevel = m_ZoomLevel;
     m_pEditor->m_LockMouse = m_LockMouse;
     m_pEditor->m_ShowMousePointer = m_ShowMousePointer;
+
     m_pEditor->m_GuiActive = m_GuiActive;
     m_pEditor->m_ProofBorders = m_ProofBorders;
-    m_pEditor->m_MouseDeltaX = m_MouseDeltaX;
-    m_pEditor->m_MouseDeltaY = m_MouseDeltaY;
-    m_pEditor->m_MouseDeltaWx = m_MouseDeltaWx;
-    m_pEditor->m_MouseDeltaWy = m_MouseDeltaWy;
 
+    m_MouseDeltaX = m_pEditor->m_MouseDeltaX;
+    m_MouseDeltaY = m_pEditor->m_MouseDeltaY;
+    m_MouseDeltaWx = m_pEditor->m_MouseDeltaWx;
+    m_MouseDeltaWy = m_pEditor->m_MouseDeltaWy;
 
+    m_pEditor->m_ShowTileInfo = m_ShowTileInfo;
+    m_pEditor->m_ShowDetail = m_ShowDetail;
+    m_pEditor->m_Animate = m_Animate;
+    m_pEditor->m_AnimateStart = m_AnimateStart;
+    //rework this
+    //m_pEditor->m_AnimateTime = m_AnimateTime;
+    m_pEditor->m_AnimateSpeed = m_AnimateSpeed;
 
-    m_pEditor->UI()->ClipEnableEx(pView);
+    m_pEditor->m_GridFactor = m_GridFactor;
+    m_pEditor->m_GridActive = m_GridActive;
+
+    m_pEditor->m_ShowEnvelopePreview = 0;
+
+    m_pEditor->UI()->ClipEnableEx(pView); //protect the user interface
 	// render all good stuff
+    m_ShowPicker = m_pEditor->Input()->KeyPressed(KEY_SPACE) != 0 && m_pEditor->m_Dialog == DIALOG_NONE;
 	if(!m_ShowPicker)
 	{
 		for(int g = 0; g < m_pEditor->m_Map.m_lGroups.size(); g++)
@@ -3469,17 +3339,27 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 		pView->w = pView->h = Max;
 	}
 
-	static void *s_pEditorID = (void *)&s_pEditorID;
-	int Inside = m_pEditor->UI()->MouseInside(pView);
-
 	// fetch mouse position
-	float wx = m_pEditor->UI()->MouseWorldX();
-	float wy = m_pEditor->UI()->MouseWorldY();
+
+
 	float mx = m_pEditor->UI()->MouseX();
 	float my = m_pEditor->UI()->MouseY();
+    //hack
+	float wx = 0;//m_pEditor->UI()->MouseWorldX();
+	float wy = 0;//m_pEditor->UI()->MouseWorldY();
+    CLayerGroup *g = m_pEditor->GetSelectedGroup();
+    if(g)
+    {
+        float aPoints[4];
+        g->Mapping(aPoints);
 
-	static float s_StartWx = 0;
-	static float s_StartWy = 0;
+        float WorldWidth = aPoints[2]-aPoints[0];
+        float WorldHeight = aPoints[3]-aPoints[1];
+
+        wx = aPoints[0] + WorldWidth * (mx/m_pEditor->UI()->Screen()->w);
+        wy = aPoints[1] + WorldHeight * (my/m_pEditor->UI()->Screen()->h);
+    }
+    //hack end
 
 	// remap the screen so it can display the whole tileset
 	if(m_ShowPicker)
@@ -3550,13 +3430,13 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 
 	if(Inside)
 	{
-		m_pEditor->UI()->SetHotItem(s_pEditorID);
+		m_pEditor->UI()->SetHotItem(m_uEditorView);
 
 		// do global operations like pan and zoom
 		if(m_pEditor->UI()->ActiveItem() == 0 && (m_pEditor->UI()->MouseButton(0) || m_pEditor->UI()->MouseButton(2)))
 		{
-			s_StartWx = wx;
-			s_StartWy = wy;
+			m_StartWx = wx;
+			m_StartWy = wy;
 
 			if(m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL) || m_pEditor->UI()->MouseButton(2))
 			{
@@ -3564,25 +3444,25 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 					m_Operation = OP_EDITOR_PAN_EDITOR;
 				else
 					m_Operation = OP_EDITOR_PAN_WORLD;
-				m_pEditor->UI()->SetActiveItem(s_pEditorID);
+				m_pEditor->UI()->SetActiveItem(m_uEditorView);
 			}
 		}
 
 		// brush editing
-		if(m_pEditor->UI()->HotItem() == s_pEditorID)
+		if(m_pEditor->UI()->HotItem() == m_uEditorView)
 		{
 			if(m_pEditor->m_Brush.IsEmpty())
 				m_pEditor->m_pTooltip = "Use left mouse button to drag and create a brush.";
 			else
 				m_pEditor->m_pTooltip = "Use left mouse button to paint with the brush. Right button clears the brush.";
 
-			if(m_pEditor->UI()->ActiveItem() == s_pEditorID)
+			if(m_pEditor->UI()->ActiveItem() == m_uEditorView)
 			{
 				CUIRect r;
-				r.x = s_StartWx;
-				r.y = s_StartWy;
-				r.w = wx-s_StartWx;
-				r.h = wy-s_StartWy;
+				r.x = m_StartWx;
+				r.y = m_StartWy;
+				r.w = wx-m_StartWx;
+				r.h = wy-m_StartWy;
 				if(r.w < 0)
 				{
 					r.x += r.w;
@@ -3654,7 +3534,7 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 
 				if(m_pEditor->UI()->MouseButton(0) && m_Operation == OP_EDITOR_NONE)
 				{
-					m_pEditor->UI()->SetActiveItem(s_pEditorID);
+					m_pEditor->UI()->SetActiveItem(m_uEditorView);
 
 					if(m_pEditor->m_Brush.IsEmpty())
 						m_Operation = OP_EDITOR_BRUSH_GRAB;
@@ -3748,7 +3628,7 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 			}
 
 			// do panning
-			if(m_pEditor->UI()->ActiveItem() == s_pEditorID)
+			if(m_pEditor->UI()->ActiveItem() == m_uEditorView)
 			{
 				if(m_Operation == OP_EDITOR_PAN_WORLD)
 				{
@@ -3762,7 +3642,7 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 				}
 
 				// release mouse
-				if(!m_pEditor->UI()->MouseButton(0))
+				if(!m_pEditor->UI()->MouseButton(0) && !m_pEditor->UI()->MouseButton(2))
 				{
 					m_Operation = OP_EDITOR_NONE;
 					m_pEditor->UI()->SetActiveItem(0);
@@ -3770,7 +3650,7 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 			}
 		}
 	}
-	else if(m_pEditor->UI()->ActiveItem() == s_pEditorID)
+	else if(m_pEditor->UI()->ActiveItem() == m_uEditorView)
 	{
 		// release mouse
 		if(!m_pEditor->UI()->MouseButton(0))
@@ -3908,6 +3788,308 @@ CUIRect CViewEditor::Render(CUIRect *pView)
     return *pView;
 }
 
+
+void CViewEditor::DoToolbar(CUIRect ToolBar)
+{
+	CUIRect TB_Top, TB_Bottom;
+	CUIRect Button;
+
+	ToolBar.HSplitTop(ToolBar.h/2.0f, &TB_Top, &TB_Bottom);
+
+	TB_Top.HSplitBottom(2.5f, &TB_Top, 0);
+	TB_Bottom.HSplitTop(2.5f, 0, &TB_Bottom);
+
+    //move the global shortcuts to CEditor::Render()
+	// ctrl+o to open
+	if(m_pEditor->Input()->KeyDown('o') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL)) && m_pEditor->m_Dialog == DIALOG_NONE)
+	{
+		if(m_pEditor->HasUnsavedData())
+		{
+			if(!m_pEditor->m_PopupEventWasActivated)
+			{
+				m_pEditor->m_PopupEventType = CEditor::POPEVENT_LOAD;
+				m_pEditor->m_PopupEventActivated = true;
+			}
+		}
+		else
+			m_pEditor->InvokeFileDialog(IStorage::TYPE_ALL, CEditor::FILETYPE_MAP, "Load map", "Load", "maps", "", m_pEditor->CallbackOpenMap, m_pEditor);
+	}
+
+	// ctrl+s to save
+	if(m_pEditor->Input()->KeyDown('s') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL)) && m_pEditor->m_Dialog == DIALOG_NONE)
+	{
+		if(m_pEditor->m_aFileName[0] && m_pEditor->m_ValidSaveFilename)
+		{
+			if(!m_pEditor->m_PopupEventWasActivated)
+			{
+				str_copy(m_pEditor->m_aFileSaveName, m_pEditor->m_aFileName, sizeof(m_pEditor->m_aFileSaveName));
+				m_pEditor->m_PopupEventType = CEditor::POPEVENT_SAVE;
+				m_pEditor->m_PopupEventActivated = true;
+			}
+		}
+		else
+			m_pEditor->InvokeFileDialog(IStorage::TYPE_SAVE, CEditor::FILETYPE_MAP, "Save map", "Save", "maps", "", m_pEditor->CallbackSaveMap, m_pEditor);
+	}
+
+	// detail button
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	static int s_HqButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_HqButton, "HD", m_ShowDetail, &Button, 0, "[ctrl+h] Toggle High Detail") ||
+		(m_pEditor->Input()->KeyDown('h') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL))))
+	{
+		m_ShowDetail = !m_ShowDetail;
+	}
+
+	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
+
+	// animation button
+	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
+	static int s_AnimateButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_AnimateButton, "Anim", m_Animate, &Button, 0, "[ctrl+m] Toggle animation") ||
+		(m_pEditor->Input()->KeyDown('m') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL))))
+	{
+		m_AnimateStart = time_get();
+		m_Animate = !m_Animate;
+	}
+
+	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
+
+	// proof button
+	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
+	static int s_ProofButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_ProofButton, "Proof", m_ProofBorders, &Button, 0, "[ctrl+p] Toggles proof borders. These borders represent what a player maximum can see.") ||
+		(m_pEditor->Input()->KeyDown('p') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL))))
+	{
+		m_ProofBorders = !m_ProofBorders;
+	}
+
+	TB_Top.VSplitLeft(5.0f, 0, &TB_Top);
+
+	// tile info button
+	TB_Top.VSplitLeft(40.0f, &Button, &TB_Top);
+	static int s_TileInfoButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_TileInfoButton, "Info", m_ShowTileInfo, &Button, 0, "[ctrl+i] Show tile informations") ||
+		(m_pEditor->Input()->KeyDown('i') && (m_pEditor->Input()->KeyPressed(KEY_LCTRL) || m_pEditor->Input()->KeyPressed(KEY_RCTRL))))
+	{
+		m_ShowTileInfo = !m_ShowTileInfo;
+		m_ShowEnvelopePreview = 0;
+	}
+
+	TB_Top.VSplitLeft(15.0f, 0, &TB_Top);
+
+	// zoom group
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	if(m_pEditor->DoButton_Ex(&m_uZoomOutButton, "ZO", 0, &Button, 0, "[NumPad-] Zoom out", CUI::CORNER_L))
+		m_ZoomLevel += 50;
+
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	if(m_pEditor->DoButton_Ex(&m_uZoomNormalButton, "1:1", 0, &Button, 0, "[NumPad*] Zoom to normal and remove editor offset", 0))
+	{
+		m_EditorOffsetX = 0;
+		m_EditorOffsetY = 0;
+		m_ZoomLevel = 100;
+	}
+
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	if(m_pEditor->DoButton_Ex(&m_uZoomInButton, "ZI", 0, &Button, 0, "[NumPad+] Zoom in", CUI::CORNER_R))
+		m_ZoomLevel -= 50;
+
+	TB_Top.VSplitLeft(10.0f, 0, &TB_Top);
+
+	// animation speed
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	static int s_AnimFasterButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_AnimFasterButton, "A+", 0, &Button, 0, "Increase animation speed", CUI::CORNER_L))
+		m_AnimateSpeed += 0.5f;
+
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	static int s_AnimNormalButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_AnimNormalButton, "1", 0, &Button, 0, "Normal animation speed", 0))
+		m_AnimateSpeed = 1.0f;
+
+	TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+	static int s_AnimSlowerButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_AnimSlowerButton, "A-", 0, &Button, 0, "Decrease animation speed", CUI::CORNER_R))
+	{
+		if(m_AnimateSpeed > 0.5f)
+			m_AnimateSpeed -= 0.5f;
+	}
+
+	TB_Top.VSplitLeft(10.0f, &Button, &TB_Top);
+
+
+	// brush manipulation
+	{
+		int Enabled = m_pEditor->m_Brush.IsEmpty()?-1:0;
+
+		// flip buttons
+		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+		static int s_FlipXButton = 0;
+		if(m_pEditor->DoButton_Ex(&s_FlipXButton, "X/X", Enabled, &Button, 0, "[N] Flip brush horizontal", CUI::CORNER_L) || m_pEditor->Input()->KeyDown('n'))
+		{
+			for(int i = 0; i < m_pEditor->m_Brush.m_lLayers.size(); i++)
+				m_pEditor->m_Brush.m_lLayers[i]->BrushFlipX();
+		}
+
+		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+		static int s_FlipyButton = 0;
+		if(m_pEditor->DoButton_Ex(&s_FlipyButton, "Y/Y", Enabled, &Button, 0, "[M] Flip brush vertical", CUI::CORNER_R) || m_pEditor->Input()->KeyDown('m'))
+		{
+			for(int i = 0; i < m_pEditor->m_Brush.m_lLayers.size(); i++)
+				m_pEditor->m_Brush.m_lLayers[i]->BrushFlipY();
+		}
+
+		// rotate buttons
+		TB_Top.VSplitLeft(15.0f, &Button, &TB_Top);
+
+		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+		static int s_RotationAmount = 90;
+		bool TileLayer = false;
+		// check for tile layers in brush selection
+		for(int i = 0; i < m_pEditor->m_Brush.m_lLayers.size(); i++)
+			if(m_pEditor->m_Brush.m_lLayers[i]->m_Type == LAYERTYPE_TILES)
+			{
+				TileLayer = true;
+				s_RotationAmount = max(90, (s_RotationAmount/90)*90);
+				break;
+			}
+		s_RotationAmount = m_pEditor->UiDoValueSelector(&s_RotationAmount, &Button, "", s_RotationAmount, TileLayer?90:1, 359, TileLayer?90:1, TileLayer?10.0f:2.0f, "Rotation of the brush in degrees. Use left mouse button to drag and change the value. Hold shift to be more precise.");
+
+		TB_Top.VSplitLeft(5.0f, &Button, &TB_Top);
+		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+		static int s_CcwButton = 0;
+		if(m_pEditor->DoButton_Ex(&s_CcwButton, "CCW", Enabled, &Button, 0, "[R] Rotates the brush counter clockwise", CUI::CORNER_L) || m_pEditor->Input()->KeyDown('r'))
+		{
+			for(int i = 0; i < m_pEditor->m_Brush.m_lLayers.size(); i++)
+				m_pEditor->m_Brush.m_lLayers[i]->BrushRotate(-s_RotationAmount/360.0f*pi*2);
+		}
+
+		TB_Top.VSplitLeft(30.0f, &Button, &TB_Top);
+		static int s_CwButton = 0;
+		if(m_pEditor->DoButton_Ex(&s_CwButton, "CW", Enabled, &Button, 0, "[T] Rotates the brush clockwise", CUI::CORNER_R) || m_pEditor->Input()->KeyDown('t'))
+		{
+			for(int i = 0; i < m_pEditor->m_Brush.m_lLayers.size(); i++)
+				m_pEditor->m_Brush.m_lLayers[i]->BrushRotate(s_RotationAmount/360.0f*pi*2);
+		}
+	}
+
+	// quad manipulation
+	{
+		// do add button
+		TB_Top.VSplitLeft(10.0f, &Button, &TB_Top);
+		TB_Top.VSplitLeft(60.0f, &Button, &TB_Top);
+		static int s_NewButton = 0;
+
+		CLayerQuads *pQLayer = (CLayerQuads *)m_pEditor->GetSelectedLayerType(0, LAYERTYPE_QUADS);
+		//CLayerTiles *tlayer = (CLayerTiles *)get_selected_layer_type(0, LAYERTYPE_TILES);
+		if(m_pEditor->DoButton_Editor(&s_NewButton, "Add Quad", pQLayer?0:-1, &Button, 0, "Adds a new quad"))
+		{
+			if(pQLayer)
+			{
+				float Mapping[4];
+				CLayerGroup *g = m_pEditor->GetSelectedGroup();
+				g->Mapping(Mapping);
+				int AddX = f2fx(Mapping[0] + (Mapping[2]-Mapping[0])/2);
+				int AddY = f2fx(Mapping[1] + (Mapping[3]-Mapping[1])/2);
+
+				CQuad *q = pQLayer->NewQuad();
+				for(int i = 0; i < 5; i++)
+				{
+					q->m_aPoints[i].x += AddX;
+					q->m_aPoints[i].y += AddY;
+				}
+			}
+		}
+	}
+
+	// tile manipulation
+	{
+		TB_Bottom.VSplitLeft(40.0f, &Button, &TB_Bottom);
+		static int s_BorderBut = 0;
+		CLayerTiles *pT = (CLayerTiles *)m_pEditor->GetSelectedLayerType(0, LAYERTYPE_TILES);
+
+		if(m_pEditor->DoButton_Editor(&s_BorderBut, "Border", pT?0:-1, &Button, 0, "Adds border tiles"))
+		{
+			if(pT)
+				m_pEditor->DoMapBorder();
+		}
+	}
+
+	TB_Bottom.VSplitLeft(5.0f, 0, &TB_Bottom);
+
+	// refocus button
+	TB_Bottom.VSplitLeft(50.0f, &Button, &TB_Bottom);
+	static int s_RefocusButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_RefocusButton, "Refocus", m_WorldOffsetX&&m_WorldOffsetY?0:-1, &Button, 0, "[HOME] Restore map focus") || (m_pEditor->m_EditBoxActive == 0 && m_pEditor->Input()->KeyDown(KEY_HOME)))
+	{
+		m_WorldOffsetX = 0;
+		m_WorldOffsetY = 0;
+	}
+
+	TB_Bottom.VSplitLeft(5.0f, 0, &TB_Bottom);
+
+	// grid button
+	TB_Bottom.VSplitLeft(50.0f, &Button, &TB_Bottom);
+	static int s_GridButton = 0;
+	if(m_pEditor->DoButton_Editor(&s_GridButton, "Grid", m_GridActive, &Button, 0, "Toggle Grid"))
+	{
+		m_GridActive = !m_GridActive;
+	}
+
+	TB_Bottom.VSplitLeft(30.0f, 0, &TB_Bottom);
+
+	// grid zoom
+	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
+	static int s_GridIncreaseButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_GridIncreaseButton, "G-", 0, &Button, 0, "Decrease grid", CUI::CORNER_L))
+	{
+		if(m_GridFactor > 1)
+			m_GridFactor--;
+	}
+
+	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
+	static int s_GridNormalButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_GridNormalButton, "1", 0, &Button, 0, "Normal grid", 0))
+		m_GridFactor = 1;
+
+	TB_Bottom.VSplitLeft(30.0f, &Button, &TB_Bottom);
+
+	static int s_GridDecreaseButton = 0;
+	if(m_pEditor->DoButton_Ex(&s_GridDecreaseButton, "G+", 0, &Button, 0, "Increase grid", CUI::CORNER_R))
+	{
+		if(m_GridFactor < 15)
+			m_GridFactor++;
+	}
+}
+
+CUIRect CViewScript::Render(CUIRect *pView)
+{
+    float Brightness = 0.25f;
+    m_pEditor->RenderBackground(*pView, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness*0);
+
+    CUIRect MenuBar = CView::Render(pView);
+    return *pView;
+}
+
+CUIRect CViewCurves::Render(CUIRect *pView)
+{
+    float Brightness = 0.25f;
+    m_pEditor->RenderBackground(*pView, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness*0);
+
+    CUIRect MenuBar = CView::Render(pView);
+    return *pView;
+}
+
+CUIRect CViewNodes::Render(CUIRect *pView)
+{
+    float Brightness = 0.25f;
+    m_pEditor->RenderBackground(*pView, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness*0);
+
+    CUIRect MenuBar = CView::Render(pView);
+    return *pView;
+}
+
+
 void CEditor::Render()
 {
 	// basic start
@@ -4015,28 +4197,6 @@ void CEditor::Render()
 	if(m_Mode == MODE_LAYERS)
 		DoMapEditor(View, ToolBar);
 
-	// do zooming
-	if(Input()->KeyDown(KEY_KP_MINUS))
-		m_ZoomLevel += 50;
-	if(Input()->KeyDown(KEY_KP_PLUS))
-		m_ZoomLevel -= 50;
-	if(Input()->KeyDown(KEY_KP_MULTIPLY))
-	{
-		m_EditorOffsetX = 0;
-		m_EditorOffsetY = 0;
-		m_ZoomLevel = 100;
-	}
-	if(m_Dialog == DIALOG_NONE && UI()->MouseInside(&View))
-	{
-		if(Input()->KeyPresses(KEY_MOUSE_WHEEL_UP))
-			m_ZoomLevel -= 20;
-
-		if(Input()->KeyPresses(KEY_MOUSE_WHEEL_DOWN))
-			m_ZoomLevel += 20;
-	}
-	m_ZoomLevel = clamp(m_ZoomLevel, 50, 2000);
-	m_WorldZoom = m_ZoomLevel/100.0f;
-
 	if(m_GuiActive)
 	{
 		float Brightness = 0.25f;
@@ -4048,8 +4208,8 @@ void CEditor::Render()
 		StatusBar.Margin(2.0f, &StatusBar);
 
 		// do the toolbar
-		if(m_Mode == MODE_LAYERS)
-			DoToolbar(ToolBar);
+		//if(m_Mode == MODE_LAYERS)
+			//DoToolbar(ToolBar);
 
 		if(m_ShowEnvelopeEditor)
 		{
@@ -4292,7 +4452,10 @@ void CEditor::Init()
 	pLayer->m_Width = 150;
 	CViewEditor *pEditor = new CViewEditor(this, pGroup);
     pEditor->m_Height = 0;
-	pEditor->m_Width = 0;
+	pEditor->m_Width = 300;
+	CViewEditor *pEditor2 = new CViewEditor(this, pGroup);
+    pEditor2->m_Height = 0;
+	pEditor2->m_Width = 0;
 
 
 	ms_CheckerTexture = Graphics()->LoadTexture("editor/checker.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, 0);
@@ -4384,7 +4547,7 @@ void CEditor::UpdateAndRender()
 		if(Input()->KeyPressed(KEY_MOUSE_2)) Buttons |= 2;
 		if(Input()->KeyPressed(KEY_MOUSE_3)) Buttons |= 4;
 
-		UI()->Update(mx,my,Mwx,Mwy,Buttons);
+		UI()->Update(mx, my, Mwx, Mwy, Buttons);
 	}
 
 	// toggle gui

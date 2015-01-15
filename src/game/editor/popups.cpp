@@ -17,14 +17,14 @@ static struct
 {
 	CUIRect m_Rect;
 	void *m_pId;
-	int (*m_pfnFunc)(CEditor *pEditor, CUIRect Rect);
+	int (*m_pfnFunc)(CEditor *pEditor, CUIRect Rect, void *pUser);
 	int m_IsMenu;
-	void *m_pExtra;
+	void *m_pUser;
 } s_UiPopups[8];
 
 static int g_UiNumPopups = 0;
 
-void CEditor::UiInvokePopupMenu(void *pID, int Flags, float x, float y, float Width, float Height, int (*pfnFunc)(CEditor *pEditor, CUIRect Rect), void *pExtra)
+void CEditor::UiInvokePopupMenu(void *pID, int Flags, float x, float y, float Width, float Height, int (*pfnFunc)(CEditor *pEditor, CUIRect Rect, void *pUser), void *pUser)
 {
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "editor", "invoked");
 	if(x + Width > UI()->Screen()->w)
@@ -38,7 +38,7 @@ void CEditor::UiInvokePopupMenu(void *pID, int Flags, float x, float y, float Wi
 	s_UiPopups[g_UiNumPopups].m_Rect.w = Width;
 	s_UiPopups[g_UiNumPopups].m_Rect.h = Height;
 	s_UiPopups[g_UiNumPopups].m_pfnFunc = pfnFunc;
-	s_UiPopups[g_UiNumPopups].m_pExtra = pExtra;
+	s_UiPopups[g_UiNumPopups].m_pUser = pUser;
 	g_UiNumPopups++;
 }
 
@@ -74,7 +74,7 @@ void CEditor::UiDoPopupMenu()
 		RenderTools()->DrawUIRect(&r, vec4(0,0,0,0.75f), Corners, 3.0f);
 		r.Margin(4.0f, &r);
 
-		if(s_UiPopups[i].m_pfnFunc(this, r))
+		if(s_UiPopups[i].m_pfnFunc(this, r, s_UiPopups[i].m_pUser))
 			g_UiNumPopups--;
 
 		if(Input()->KeyDown(KEY_ESCAPE))
@@ -83,7 +83,7 @@ void CEditor::UiDoPopupMenu()
 }
 
 
-int CEditor::PopupGroup(CEditor *pEditor, CUIRect View)
+int CEditor::PopupGroup(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	// remove group button
 	CUIRect Button;
@@ -242,7 +242,7 @@ int CEditor::PopupGroup(CEditor *pEditor, CUIRect View)
 	return 0;
 }
 
-int CEditor::PopupLayer(CEditor *pEditor, CUIRect View)
+int CEditor::PopupLayer(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	// remove layer button
 	CUIRect Button;
@@ -323,7 +323,7 @@ int CEditor::PopupLayer(CEditor *pEditor, CUIRect View)
 	return pCurrentLayer->RenderProperties(&View);
 }
 
-int CEditor::PopupQuad(CEditor *pEditor, CUIRect View)
+int CEditor::PopupQuad(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CQuad *pQuad = pEditor->GetSelectedQuad();
 
@@ -492,7 +492,7 @@ int CEditor::PopupQuad(CEditor *pEditor, CUIRect View)
 	return 0;
 }
 
-int CEditor::PopupPoint(CEditor *pEditor, CUIRect View)
+int CEditor::PopupPoint(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CQuad *pQuad = pEditor->GetSelectedQuad();
 
@@ -565,7 +565,7 @@ int CEditor::PopupPoint(CEditor *pEditor, CUIRect View)
 	return 0;
 }
 
-int CEditor::PopupNewFolder(CEditor *pEditor, CUIRect View)
+int CEditor::PopupNewFolder(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CUIRect Label, ButtonBar;
 
@@ -634,7 +634,7 @@ int CEditor::PopupNewFolder(CEditor *pEditor, CUIRect View)
 	return 0;
 }
 
-int CEditor::PopupMapInfo(CEditor *pEditor, CUIRect View)
+int CEditor::PopupMapInfo(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CUIRect Label, ButtonBar, Button;
 
@@ -702,7 +702,7 @@ int CEditor::PopupMapInfo(CEditor *pEditor, CUIRect View)
 	return 0;
 }
 
-int CEditor::PopupEvent(CEditor *pEditor, CUIRect View)
+int CEditor::PopupEvent(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CUIRect Label, ButtonBar;
 
@@ -770,7 +770,7 @@ int CEditor::PopupEvent(CEditor *pEditor, CUIRect View)
 static int g_SelectImageSelected = -100;
 static int g_SelectImageCurrent = -100;
 
-int CEditor::PopupSelectImage(CEditor *pEditor, CUIRect View)
+int CEditor::PopupSelectImage(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CUIRect ButtonBar, ImageView;
 	View.VSplitLeft(80.0f, &ButtonBar, &View);
@@ -841,7 +841,7 @@ int CEditor::PopupSelectImageResult()
 
 static int s_GametileOpSelected = -1;
 
-int CEditor::PopupSelectGametileOp(CEditor *pEditor, CUIRect View)
+int CEditor::PopupSelectGametileOp(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	static const char *s_pButtonNames[] = { "Clear", "Collision", "Death", "Unhookable" };
 	static unsigned s_NumButtons = sizeof(s_pButtonNames) / sizeof(char*);
@@ -877,7 +877,7 @@ int CEditor::PopupSelectGameTileOpResult()
 
 static int s_AutoMapConfigSelected = -1;
 
-int CEditor::PopupSelectConfigAutoMap(CEditor *pEditor, CUIRect View)
+int CEditor::PopupSelectConfigAutoMap(CEditor *pEditor, CUIRect View, void *pUser)
 {
 	CLayerTiles *pLayer = static_cast<CLayerTiles*>(pEditor->GetSelectedLayer(0));
 	CUIRect Button;

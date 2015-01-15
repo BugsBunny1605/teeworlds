@@ -122,10 +122,6 @@ void CUI::ClipUpdate()
     }
     if (m_UseClipEx)
         Clip = m_ClippingEx;
-    dbg_msg("normal", "%f %f %f %f", m_ClippingNormal.x,  m_ClippingNormal.y,  m_ClippingNormal.w,  m_ClippingNormal.h);
-    dbg_msg("ex    ", "%f %f %f %f", m_ClippingEx.x,  m_ClippingEx.y,  m_ClippingEx.w,  m_ClippingEx.h);
-    dbg_msg("mixed ", "%f %f %f %f", Clip.x,  Clip.y,  Clip.w,  Clip.h);
-
 	Graphics()->ClipEnable((int)Clip.x, (int)Clip.y, (int)Clip.w, (int)Clip.h);
 }
 

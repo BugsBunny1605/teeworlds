@@ -496,16 +496,19 @@ enum
     EDITOR_VIEW_EDITOR,
     EDITOR_VIEW_SCRIPT,
     EDITOR_VIEW_CURVES,
+    EDITOR_VIEW_NODES,
 };
 
 enum
 {
-    EDITOR_UI_ICON_LEX = 0,
+    EDITOR_UI_ICON_NONE = -1,
+    EDITOR_UI_ICON_LEX,
     EDITOR_UI_ICON_REX,
     EDITOR_UI_ICON_LAYER,
     EDITOR_UI_ICON_EDITOR,
     EDITOR_UI_ICON_SCRIPT,
     EDITOR_UI_ICON_CURVES,
+    EDITOR_UI_ICON_NODES,
 };
 
 class CView
@@ -513,6 +516,7 @@ class CView
     int m_uLEx;
     int m_uREx;
     int m_uSelector;
+    int m_uSelectorMenu;
     friend class CEditor;
     friend class CViewGroup;
 protected:
@@ -534,6 +538,8 @@ public:
     bool SetWidth(float x);
     bool SetHeight(float y);
 
+    static int PopupSelector(CEditor *pView, CUIRect View, void *pUser);
+
     CUIRect GetView(CUIRect *pView, int m_Direction);
 };
 
@@ -546,6 +552,7 @@ public:
     CViewGroup(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
     int GetType() { return EDITOR_VIEW_GROUP; }
     CUIRect Render(CUIRect *pView);
+    void Replace(CView *pOldView, CView *pNewView);
 };
 
 class CViewMenu : public CView
@@ -596,11 +603,21 @@ public:
 
 class CViewEditor : public CView
 {
-    bool m_ShowTileInfo;
-    bool m_ShowPicker;
-    int m_ShowEnvelopePreview; //Values: 0-Off|1-Selected Envelope|2-All
+    //ui handles
+    void *m_uEditorView;
+    int m_uZoomOutButton;
+    int m_uZoomNormalButton;
+    int m_uZoomInButton;
 
-	float m_WorldOffsetX;
+    //drag start
+    float m_StartWx;
+    float m_StartWy;
+
+
+	bool m_GridActive;
+	int m_GridFactor;
+
+    float m_WorldOffsetX;
 	float m_WorldOffsetY;
 	float m_EditorOffsetX;
 	float m_EditorOffsetY;
@@ -615,28 +632,61 @@ class CViewEditor : public CView
 	float m_MouseDeltaWx;
 	float m_MouseDeltaWy;
 
+	bool m_ShowTileInfo;
+	bool m_ShowDetail;
+	bool m_Animate;
+	int64 m_AnimateStart;
+	float m_AnimateTime;
+	float m_AnimateSpeed;
+
+    bool m_ShowPicker;
+    int m_ShowEnvelopePreview; //Values: 0-Off|1-Selected Envelope|2-All
+
+
+
 	int m_Operation;
 
 public:
     CViewEditor(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent)
     {
+        m_uEditorView = &m_uEditorView;
+
+        m_StartWx = 0;
+        m_StartWy = 0;
+
         m_ShowPicker = false;
+
+		m_GridActive = false;
+		m_GridFactor = 1;
 
 		m_WorldOffsetX = 0;
 		m_WorldOffsetY = 0;
 		m_EditorOffsetX = 0.0f;
 		m_EditorOffsetY = 0.0f;
 
-		m_WorldZoom = 1.0f;
+		m_WorldZoom = 2.0f;
 		m_ZoomLevel = 200;
 		m_LockMouse = false;
 		m_ShowMousePointer = true;
+
+		m_GuiActive = true;
+		m_ProofBorders = false;
+
 		m_MouseDeltaX = 0;
 		m_MouseDeltaY = 0;
 		m_MouseDeltaWx = 0;
 		m_MouseDeltaWy = 0;
 
+		m_ShowTileInfo = false;
+		m_ShowDetail = true;
+		m_Animate = false;
+		m_AnimateStart = 0;
+		m_AnimateTime = 0;
+		m_AnimateSpeed = 1;
+
 		m_ShowEnvelopePreview = 0;
+		//m_SelectedQuadEnvelope = -1;
+		//m_SelectedEnvelopePoint = -1;
 
 		m_Operation = OP_EDITOR_NONE;
 
@@ -644,6 +694,7 @@ public:
     }
     int GetType() { return EDITOR_VIEW_EDITOR; }
     CUIRect Render(CUIRect *pView);
+    void DoToolbar(CUIRect ToolBar);
 };
 
 class CViewScript : public CView
@@ -657,7 +708,16 @@ public:
 class CViewCurves : public CView
 {
 public:
+    CViewCurves(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
     int GetType() { return EDITOR_VIEW_CURVES; }
+    CUIRect Render(CUIRect *pView);
+};
+
+class CViewNodes : public CView
+{
+public:
+    CViewNodes(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    int GetType() { return EDITOR_VIEW_NODES; }
     CUIRect Render(CUIRect *pView);
 };
 
@@ -927,23 +987,23 @@ public:
 
 	void RenderGrid(CLayerGroup *pGroup);
 
-	void UiInvokePopupMenu(void *pID, int Flags, float X, float Y, float W, float H, int (*pfnFunc)(CEditor *pEditor, CUIRect Rect), void *pExtra=0);
+	void UiInvokePopupMenu(void *pID, int Flags, float X, float Y, float W, float H, int (*pfnFunc)(CEditor *pEditor, CUIRect Rect, void *pUser), void *pExtra=0);
 	void UiDoPopupMenu();
 
 	int UiDoValueSelector(void *pID, CUIRect *pRect, const char *pLabel, int Current, int Min, int Max, int Step, float Scale, const char *pToolTip);
 
-	static int PopupGroup(CEditor *pEditor, CUIRect View);
-	static int PopupLayer(CEditor *pEditor, CUIRect View);
-	static int PopupQuad(CEditor *pEditor, CUIRect View);
-	static int PopupPoint(CEditor *pEditor, CUIRect View);
-	static int PopupNewFolder(CEditor *pEditor, CUIRect View);
-	static int PopupMapInfo(CEditor *pEditor, CUIRect View);
-	static int PopupEvent(CEditor *pEditor, CUIRect View);
-	static int PopupSelectImage(CEditor *pEditor, CUIRect View);
-	static int PopupSelectGametileOp(CEditor *pEditor, CUIRect View);
-	static int PopupImage(CEditor *pEditor, CUIRect View);
-	static int PopupMenuFile(CEditor *pEditor, CUIRect View);
-	static int PopupSelectConfigAutoMap(CEditor *pEditor, CUIRect View);
+	static int PopupGroup(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupLayer(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupQuad(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupPoint(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupNewFolder(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupMapInfo(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupEvent(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupSelectImage(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupSelectGametileOp(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupImage(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupMenuFile(CEditor *pEditor, CUIRect View, void *pUser);
+	static int PopupSelectConfigAutoMap(CEditor *pEditor, CUIRect View, void *pUser);
 
 	static void CallbackOpenMap(const char *pFileName, int StorageType, void *pUser);
 	static void CallbackAppendMap(const char *pFileName, int StorageType, void *pUser);
