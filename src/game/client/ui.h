@@ -2,6 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #ifndef GAME_CLIENT_UI_H
 #define GAME_CLIENT_UI_H
+#include <base/vmath.h>
 
 class CUIRect
 {
@@ -83,6 +84,31 @@ public:
 
 	CUIRect *Screen();
 	float PixelSize();
+
+    //maybe use gl_stencil for masking later
+    //this method only supports subtractive masks
+    //mask1 AND mask2 == rendered
+    //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    //xxxxx11111111111111111111111xxxxxxxxxxxxxx
+    //xxxxx11111111rrrrrrrrrrrrrrr222222222xxxxx
+    //xxxxx11111111rrrrrrrrrrrrrrr222222222xxxxx
+    //xxxxx11111111rrrrrrrrrrrrrrr222222222xxxxx
+    //xxxxxxxxxxxxx222222222222222222222222xxxxx
+    //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    //this method fixes the issue for now.
+    //but later we might need complex clipping
+    //masks
+
+    //todo: move this to graphics.cpp
+	bool m_UseClipEx;
+	bool m_UseClipNormal;
+	vec2 m_ClipScaleEx;
+	vec2 m_ClipScaleNormal;
+	CUIRect m_ClippingEx;
+	CUIRect m_ClippingNormal;
+	void ClipUpdate(); //internal function.
+	void ClipEnableEx(const CUIRect *pRect); //extended clipping
+	void ClipDisableEx();
 	void ClipEnable(const CUIRect *pRect);
 	void ClipDisable();
 

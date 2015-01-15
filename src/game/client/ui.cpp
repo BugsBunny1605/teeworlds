@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/system.h>
+#include <base/math.h>
 
 #include <engine/shared/config.h>
 #include <engine/graphics.h>
@@ -29,6 +30,9 @@ CUI::CUI()
 	m_Screen.y = 0;
 	m_Screen.w = 848.0f;
 	m_Screen.h = 480.0f;
+
+	m_UseClipEx = false;
+	m_UseClipNormal = false;
 }
 
 int CUI::Update(float Mx, float My, float Mwx, float Mwy, int Buttons)
@@ -94,16 +98,73 @@ float CUIRect::Scale() const
 	return g_Config.m_UiScale/100.0f;
 }
 
+void CUI::ClipUpdate()
+{
+    CUIRect Clip;
+    if (!m_UseClipNormal && !m_UseClipEx)
+    {
+        Graphics()->ClipDisable();
+        return;
+    }
+    if (m_UseClipNormal != m_UseClipEx)
+    {
+        if (m_UseClipNormal)
+            Clip = m_ClippingNormal;
+        else
+            Clip = m_ClippingEx;
+    }
+    else
+    {
+        Clip.x = max(m_ClippingNormal.x, m_ClippingEx.x);
+        Clip.y = max(m_ClippingNormal.y, m_ClippingEx.y);
+        Clip.w = min(m_ClippingNormal.w, m_ClippingEx.w);
+        Clip.h = min(m_ClippingNormal.h, m_ClippingEx.h);
+    }
+    if (m_UseClipEx)
+        Clip = m_ClippingEx;
+    dbg_msg("normal", "%f %f %f %f", m_ClippingNormal.x,  m_ClippingNormal.y,  m_ClippingNormal.w,  m_ClippingNormal.h);
+    dbg_msg("ex    ", "%f %f %f %f", m_ClippingEx.x,  m_ClippingEx.y,  m_ClippingEx.w,  m_ClippingEx.h);
+    dbg_msg("mixed ", "%f %f %f %f", Clip.x,  Clip.y,  Clip.w,  Clip.h);
+
+	Graphics()->ClipEnable((int)Clip.x, (int)Clip.y, (int)Clip.w, (int)Clip.h);
+}
+
+void CUI::ClipEnableEx(const CUIRect *r)
+{
+    m_ClippingEx = *r;
+    m_UseClipEx = true;
+    float XScale = Graphics()->ScreenWidth()/Screen()->w;
+	float YScale = Graphics()->ScreenHeight()/Screen()->h;
+    m_ClippingEx.x *= XScale;
+    m_ClippingEx.y *= YScale;
+    m_ClippingEx.w *= XScale;
+    m_ClippingEx.h *= YScale;
+    ClipUpdate();
+}
+
+void CUI::ClipDisableEx()
+{
+    m_UseClipEx = false;
+    ClipUpdate();
+}
+
 void CUI::ClipEnable(const CUIRect *r)
 {
-	float XScale = Graphics()->ScreenWidth()/Screen()->w;
+    m_ClippingNormal = *r;
+    m_UseClipNormal = true;
+    float XScale = Graphics()->ScreenWidth()/Screen()->w;
 	float YScale = Graphics()->ScreenHeight()/Screen()->h;
-	Graphics()->ClipEnable((int)(r->x*XScale), (int)(r->y*YScale), (int)(r->w*XScale), (int)(r->h*YScale));
+    m_ClippingNormal.x *= XScale;
+    m_ClippingNormal.y *= YScale;
+    m_ClippingNormal.w *= XScale;
+    m_ClippingNormal.h *= YScale;
+    ClipUpdate();
 }
 
 void CUI::ClipDisable()
 {
-	Graphics()->ClipDisable();
+    m_UseClipNormal = false;
+    ClipUpdate();
 }
 
 void CUIRect::HSplitMid(CUIRect *pTop, CUIRect *pBottom) const

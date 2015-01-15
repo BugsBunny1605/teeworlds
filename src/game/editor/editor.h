@@ -26,6 +26,16 @@
 
 typedef void (*INDEX_MODIFY_FUNC)(int *pIndex);
 
+enum
+{
+    OP_EDITOR_NONE=0,
+    OP_EDITOR_BRUSH_GRAB,
+    OP_EDITOR_BRUSH_DRAW,
+    OP_EDITOR_BRUSH_PAINT,
+    OP_EDITOR_PAN_WORLD,
+    OP_EDITOR_PAN_EDITOR,
+};
+
 //CRenderTools m_RenderTools;
 
 // CEditor SPECIFIC
@@ -586,8 +596,52 @@ public:
 
 class CViewEditor : public CView
 {
+    bool m_ShowTileInfo;
+    bool m_ShowPicker;
+    int m_ShowEnvelopePreview; //Values: 0-Off|1-Selected Envelope|2-All
+
+	float m_WorldOffsetX;
+	float m_WorldOffsetY;
+	float m_EditorOffsetX;
+	float m_EditorOffsetY;
+	float m_WorldZoom;
+	int m_ZoomLevel;
+	bool m_LockMouse;
+	bool m_ShowMousePointer;
+	bool m_GuiActive;
+	bool m_ProofBorders;
+	float m_MouseDeltaX;
+	float m_MouseDeltaY;
+	float m_MouseDeltaWx;
+	float m_MouseDeltaWy;
+
+	int m_Operation;
+
 public:
-    CViewEditor(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    CViewEditor(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent)
+    {
+        m_ShowPicker = false;
+
+		m_WorldOffsetX = 0;
+		m_WorldOffsetY = 0;
+		m_EditorOffsetX = 0.0f;
+		m_EditorOffsetY = 0.0f;
+
+		m_WorldZoom = 1.0f;
+		m_ZoomLevel = 200;
+		m_LockMouse = false;
+		m_ShowMousePointer = true;
+		m_MouseDeltaX = 0;
+		m_MouseDeltaY = 0;
+		m_MouseDeltaWx = 0;
+		m_MouseDeltaWy = 0;
+
+		m_ShowEnvelopePreview = 0;
+
+		m_Operation = OP_EDITOR_NONE;
+
+		m_GuiActive = true;
+    }
     int GetType() { return EDITOR_VIEW_EDITOR; }
     CUIRect Render(CUIRect *pView);
 };
