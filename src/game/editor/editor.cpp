@@ -2767,13 +2767,11 @@ void CViewGroup::Replace(CView *pOldView, CView *pNewView)
     {
         if (m_lpChildren[i] == pOldView)
         {
-            dbg_msg("size_1", "%i", m_lpChildren.size());
             pNewView->m_pParent = pOldView->m_pParent; //manually set parent
             pNewView->m_Width = pOldView->m_Width;
             pNewView->m_Height = pOldView->m_Height;
             delete pOldView;
             m_lpChildren[i] = pNewView;
-            dbg_msg("size_2", "%i", m_lpChildren.size());
             return;
         }
     }
@@ -3238,13 +3236,15 @@ CUIRect CViewEditor::Render(CUIRect *pView)
 	m_pEditor->UI()->DoLabel(&MenuBar, aBuf, 10.0f, 1, -1);
 
 
-    CUIRect ToolBar;
-    pView->HSplitTop(53.0f, &ToolBar, pView);
-    m_pEditor->UI()->ClipEnableEx(&ToolBar); //protect the user interface
-    m_pEditor->RenderBackground(ToolBar, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness);
-    ToolBar.Margin(2.0f, &ToolBar);
-    DoToolbar(ToolBar);
-
+    if (m_Toolbar)
+    {
+        CUIRect ToolBar;
+        pView->HSplitTop(53.0f, &ToolBar, pView);
+        m_pEditor->UI()->ClipEnableEx(&ToolBar); //protect the user interface
+        m_pEditor->RenderBackground(ToolBar, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness);
+        ToolBar.Margin(2.0f, &ToolBar);
+        DoToolbar(ToolBar);
+    }
     int Inside = m_pEditor->UI()->MouseInside(pView);
 
     // do zooming
@@ -4082,10 +4082,26 @@ CUIRect CViewCurves::Render(CUIRect *pView)
 
 CUIRect CViewNodes::Render(CUIRect *pView)
 {
-    float Brightness = 0.25f;
-    m_pEditor->RenderBackground(*pView, m_pEditor->ms_BackgroundTexture, 128.0f, Brightness*0);
-
     CUIRect MenuBar = CView::Render(pView);
+
+    CUIRect Button;
+    float w = MenuBar.w;
+    if (w > 170)
+        w = 170;
+    MenuBar.VMargin(MenuBar.w / 2 - w / 2, &MenuBar);
+    w -= 70;
+    MenuBar.VSplitLeft(20, &Button, &MenuBar);
+    m_pEditor->DoButton_ButtonDec(&m_uMenuPrev, 0, 0, &Button, 0, "Previous node group");
+    MenuBar.VSplitLeft(w, &Button, &MenuBar);
+    m_pEditor->DoEditBox(&m_uMenuName, &Button, m_aMenuName, sizeof(m_aMenuName), 10, &m_aMenuNameOffset, false, 0);
+    MenuBar.VSplitLeft(20, &Button, &MenuBar);
+    m_pEditor->DoButton_ButtonInc(&m_uMenuNext, 0, 0, &Button, 0, "Next node group");
+    MenuBar.VSplitLeft(5, &Button, &MenuBar);
+    MenuBar.VSplitLeft(25, &Button, &MenuBar);
+    m_pEditor->DoButton_Ex(&m_uMenuAdd, "Add", 0, &Button, 0, "Next node group", 0, 10);
+    //
+
+
     return *pView;
 }
 
@@ -4445,17 +4461,38 @@ void CEditor::Init()
 	m_Map.m_pEditor = this;
 
 	CViewMenu *pMenu = new CViewMenu(this, m_pMain);
+
 	CViewGroup *pGroup = new CViewGroup(this, m_pMain);
 	pGroup->m_Height = 0;
-	CViewLayer *pLayer = new CViewLayer(this, pGroup);
-	pLayer->m_Height = 0;
-	pLayer->m_Width = 150;
-	CViewEditor *pEditor = new CViewEditor(this, pGroup);
-    pEditor->m_Height = 0;
-	pEditor->m_Width = 300;
-	CViewEditor *pEditor2 = new CViewEditor(this, pGroup);
-    pEditor2->m_Height = 0;
-	pEditor2->m_Width = 0;
+
+        CViewGroup *pGroupLeft = new CViewGroup(this, pGroup);
+        pGroupLeft->m_Height = 0;
+        pGroupLeft->m_Width = 150;
+
+            CViewLayer *pLayer = new CViewLayer(this, pGroupLeft);
+            pLayer->m_Height = 500;
+            pLayer->m_Width = 0;
+
+            CViewEditor *pMinimap = new CViewEditor(this, pGroupLeft);
+            pMinimap->m_Height = 0;
+            pMinimap->m_Width = 0;
+            pMinimap->m_Toolbar = false;
+
+        CView *pNodes = new CViewNodes(this, pGroup);
+        pNodes->m_Height = 0;
+        pNodes->m_Width = 700;
+
+        CViewGroup *pGroupRight = new CViewGroup(this, pGroup);
+        pGroupRight->m_Height = 0;
+        pGroupRight->m_Width = 0;
+
+            CView *pEditor = new CViewEditor(this, pGroupRight);
+            pEditor->m_Height = 500;
+            pEditor->m_Width = 0;
+
+            CView *pCurves = new CViewCurves(this, pGroupRight);
+            pCurves->m_Height = 0;
+            pCurves->m_Width = 0;
 
 
 	ms_CheckerTexture = Graphics()->LoadTexture("editor/checker.png", IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, 0);

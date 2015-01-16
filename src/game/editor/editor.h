@@ -642,8 +642,6 @@ class CViewEditor : public CView
     bool m_ShowPicker;
     int m_ShowEnvelopePreview; //Values: 0-Off|1-Selected Envelope|2-All
 
-
-
 	int m_Operation;
 
 public:
@@ -690,11 +688,14 @@ public:
 
 		m_Operation = OP_EDITOR_NONE;
 
-		m_GuiActive = true;
+		m_GuiActive = true; //same?
+		m_Toolbar = true;
     }
     int GetType() { return EDITOR_VIEW_EDITOR; }
     CUIRect Render(CUIRect *pView);
     void DoToolbar(CUIRect ToolBar);
+
+    bool m_Toolbar;
 };
 
 class CViewScript : public CView
@@ -713,11 +714,38 @@ public:
     CUIRect Render(CUIRect *pView);
 };
 
+struct CNode
+{
+    array<CNode *> m_lpInputs;
+    array<CNode *> m_lpOutputs;
+};
+
+struct CNodeGroup
+{
+    array<CNode> m_lNodes;
+    char m_aName[128];
+};
+
 class CViewNodes : public CView
 {
+    int m_uMenuPrev;
+    int m_uMenuName;
+    int m_uMenuNext;
+    int m_uMenuAdd;
+    char m_aMenuName[128];
+    float m_aMenuNameOffset;
+
+    int m_SelectedNodeGroup;
+
+    array<CNodeGroup> m_lNodeGroups;
 public:
-    CViewNodes(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent) {}
+    CViewNodes(class CEditor *pEditor, CViewGroup *pParent = 0) : CView(pEditor, pParent)
+    {
+        m_aMenuName[0] = 0;
+        m_aMenuNameOffset = 0;
+    }
     int GetType() { return EDITOR_VIEW_NODES; }
+    float GetMinWidth() { return 150; }
     CUIRect Render(CUIRect *pView);
 };
 
